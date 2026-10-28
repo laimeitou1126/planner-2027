@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e88e5">
+<meta name="description" content="2027 planner with Malaysia public holidays, week numbers and notes saved on your phone.">
+<title>2027 Planner</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="2027 Planner">
+<style>
+  :root {
+    --bg: #f3f7fb;
+    --card: #ffffff;
+    --ink: #1f2a37;
+    --muted: #6b7a8c;
+    --line: #e3eaf2;
+    --blue: #1e88e5;
+    --teal: #00a99d;
+    --hol: #e65a4f;
+    --holbg: #fdecea;
+    --note: #f6b400;
+    --today: #1e88e5;
+    --sel: #e3f2fd;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #11161d; --card: #1a222c; --ink: #e8eef5; --muted: #93a2b4; --line: #2a3542;
+      --holbg: #3a2220; --sel: #1d3247;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--ink);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 12px 32px; padding-top: env(safe-area-inset-top); }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 14px 2px 10px; position: sticky; top: 0; background: var(--bg); z-index: 3;
+  }
+  .nav {
+    appearance: none; border: 0; width: 44px; height: 44px; border-radius: 50%;
+    background: var(--card); color: var(--ink); font-size: 22px; cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  }
+  .nav:disabled { opacity: .3; cursor: default; }
+  .title { text-align: center; flex: 1; }
+  .title h1 { margin: 0; font-size: 24px; letter-spacing: -.3px; }
+  .title small { color: var(--muted); font-size: 13px; }
+
+  .months {
+    display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 10px; scrollbar-width: none;
+  }
+  .months::-webkit-scrollbar { display: none; }
+  .months button {
+    appearance: none; border: 0; border-radius: 999px; padding: 7px 12px; font: inherit; font-size: 14px;
+    background: var(--card); color: var(--ink); cursor: pointer; flex: none;
+  }
+  .months button.on { background: var(--blue); color: #fff; font-weight: 700; }
+
+  .cal { background: var(--card); border-radius: 18px; padding: 10px 8px 8px; box-shadow: 0 2px 10px rgba(0,0,0,.06); touch-action: pan-y; }
+  .grid { display: grid; grid-template-columns: 30px repeat(7, 1fr); gap: 3px; }
+  .dow { text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); padding: 4px 0 6px; }
+  .dow.we { color: var(--hol); }
+  .wk { font-size: 11px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+  .day {
+    appearance: none; border: 0; background: transparent; color: var(--ink); font: inherit;
+    aspect-ratio: 1 / 1.05; border-radius: 12px; cursor: pointer; position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 6px;
+    font-size: 16px; min-height: 40px;
+  }
+  .day.out { visibility: hidden; }
+  .day.we { color: var(--hol); }
+  .day.hol { background: var(--holbg); color: var(--hol); font-weight: 700; }
+  .day.today { box-shadow: inset 0 0 0 2px var(--today); }
+  .day.sel { background: var(--blue); color: #fff; }
+  .day .dots { display: flex; gap: 3px; margin-top: 4px; }
+  .day .dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--note); display: block; }
+  .day .dots i.h { background: var(--hol); }
+  .day.sel .dots i { background: #fff; }
+
+  .legend { display: flex; gap: 14px; justify-content: center; font-size: 12px; color: var(--muted); margin: 10px 0 0; flex-wrap: wrap; }
+  .legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; background: var(--c); vertical-align: 1px; }
+
+  .panel { background: var(--card); border-radius: 18px; padding: 14px 14px; margin-top: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+  .panel h2 { margin: 0 0 4px; font-size: 18px; }
+  .panel .sub { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+  .holtag { display: inline-block; background: var(--holbg); color: var(--hol); border-radius: 8px; padding: 4px 8px; font-size: 14px; font-weight: 600; margin: 0 6px 8px 0; }
+  textarea {
+    width: 100%; min-height: 110px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+    font: inherit; font-size: 16px; background: var(--bg); color: var(--ink); resize: vertical;
+  }
+  textarea:focus { outline: 2px solid var(--blue); outline-offset: 0; }
+  .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .saved { font-size: 12px; color: var(--muted); }
+  .btn {
+    appearance: none; border: 0; border-radius: 999px; padding: 9px 14px; font: inherit; font-size: 14px; font-weight: 600;
+    background: var(--sel); color: var(--blue); cursor: pointer;
+  }
+  .btn.danger { background: transparent; color: var(--hol); }
+
+  .tabs { display: flex; gap: 6px; margin-top: 16px; }
+  .tabs button {
+    flex: 1; appearance: none; border: 0; border-radius: 12px; padding: 10px; font: inherit; font-size: 14px; font-weight: 600;
+    background: var(--card); color: var(--muted); cursor: pointer;
+  }
+  .tabs button.on { background: var(--blue); color: #fff; }
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li { display: flex; gap: 12px; padding: 10px 2px; border-top: 1px solid var(--line); cursor: pointer; }
+  .list li:first-child { border-top: 0; }
+  .list .d { flex: none; width: 52px; text-align: center; }
+  .list .d b { display: block; font-size: 20px; line-height: 1.1; }
+  .list .d small { color: var(--muted); font-size: 12px; }
+  .list .t { flex: 1; min-width: 0; font-size: 15px; line-height: 1.35; }
+  .list .t small { display: block; color: var(--muted); font-size: 12px; }
+  .list .t .clip { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
+  .list li.past { opacity: .5; }
+  .empty { color: var(--muted); font-size: 14px; padding: 8px 2px; }
+  .note-small { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 14px 4px 0; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <button class="nav" id="prev" aria-label="Previous month">‹</button>
+    <div class="title"><h1 id="mName">January</h1><small id="mSub">2027</small></div>
+    <button class="nav" id="next" aria-label="Next month">›</button>
+  </header>
+
+  <div class="months" id="months"></div>
+
+  <div class="cal" id="cal">
+    <div class="grid" id="grid"></div>
+    <div class="legend">
+      <span style="--c:var(--hol)">Public holiday</span>
+      <span style="--c:var(--note)">Has a note</span>
+      <span style="--c:var(--muted)">Wk = week number</span>
+    </div>
+  </div>
+
+  <div class="panel" id="dayPanel">
+    <h2 id="dTitle">Pick a day</h2>
+    <div class="sub" id="dSub">Tap any date to add a note.</div>
+    <div id="dHols"></div>
+    <textarea id="noteBox" placeholder="Add a note, appointment or reminder…" aria-label="Note for this day"></textarea>
+    <div class="row">
+      <span class="saved" id="saved">Notes save automatically on this phone.</span>
+      <button class="btn danger" id="clearNote">Clear note</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button id="tabHol" class="on">🇲🇾 Holidays</button>
+    <button id="tabNotes">📝 My notes</button>
+  </div>
+  <div class="panel">
+    <ul class="list" id="list"></ul>
+  </div>
+
+  <p class="note-small">Malaysia national public holidays for 2027. Dates for religious and lunar holidays are expected dates. They can shift by a day once the official list is announced, and replacement holidays and state holidays aren't shown. Your notes are kept only on this device.</p>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const YEAR = 2027;
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  // Malaysia national public holidays 2027. "~" = expected date (lunar / religious calendar).
+  const HOLIDAYS = [
+    ['2027-01-01', "New Year's Day", '', 'Most states'],
+    ['2027-02-06', 'Chinese New Year', '~'],
+    ['2027-02-07', 'Chinese New Year (Day 2)', '~'],
+    ['2027-03-10', 'Hari Raya Aidilfitri', '~'],
+    ['2027-03-11', 'Hari Raya Aidilfitri (Day 2)', '~'],
+    ['2027-05-01', 'Labour Day', ''],
+    ['2027-05-17', 'Hari Raya Haji', '~'],
+    ['2027-05-20', 'Wesak Day', '~'],
+    ['2027-06-06', 'Awal Muharram', '~'],
+    ['2027-06-07', "Agong's Birthday", ''],
+    ['2027-08-15', 'Maulidur Rasul', '~'],
+    ['2027-08-31', 'National Day (Merdeka)', ''],
+    ['2027-09-16', 'Malaysia Day', ''],
+    ['2027-10-28', 'Deepavali', '~', 'Except Sarawak'],
+    ['2027-12-25', 'Christmas Day', '']
+  ];
+  const holMap = {};
+  HOLIDAYS.forEach(([d, name, est, note]) => (holMap[d] = holMap[d] || []).push({ name, est: !!est, note: note || '' }));
+
+  // ---------- notes, kept in this browser only ----------
+  const KEY = 'planner2027.notes';
+  let notes = {};
+  try { notes = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { notes = {}; }
+  function saveNotes() {
+    try { localStorage.setItem(KEY, JSON.stringify(notes)); return true; } catch (e) { return false; }
+  }
+
+  // ---------- helpers ----------
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, '0');
+  const iso = (m, d) => `${YEAR}-${pad(m + 1)}-${pad(d)}`;
+  const dowMon = date => (date.getDay() + 6) % 7; // 0 = Monday
+  function isoWeek(date) {
+    const t = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil(((t - y0) / 86400000 + 1) / 7);
+  }
+  function parse(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); }
+  function longDate(s) { return parse(s).toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+  // ---------- state ----------
+  let month = now.getFullYear() === YEAR ? now.getMonth() : 0;
+  let selected = now.getFullYear() === YEAR ? todayIso : null;
+  try {
+    const last = localStorage.getItem('planner2027.month');
+    if (last !== null && now.getFullYear() !== YEAR) month = Math.min(11, Math.max(0, +last || 0));
+  } catch (e) { /* ignore */ }
+  let tab = 'hol';
+
+  // ---------- month chips ----------
+  MONTHS.forEach((name, i) => {
+    const b = document.createElement('button');
+    b.textContent = name.slice(0, 3);
+    b.onclick = () => go(i);
+    $('months').appendChild(b);
+  });
+
+  function go(m) {
+    month = Math.min(11, Math.max(0, m));
+    try { localStorage.setItem('planner2027.month', month); } catch (e) { /* ignore */ }
+    renderMonth();
+  }
+
+  // ---------- calendar grid ----------
+  function renderMonth() {
+    $('mName').textContent = MONTHS[month];
+    const holCount = Object.keys(holMap).filter(d => +d.slice(5, 7) === month + 1).length;
+    $('mSub').textContent = YEAR + (holCount ? ` · ${holCount} public holiday${holCount > 1 ? 's' : ''}` : '');
+    $('prev').disabled = month === 0;
+    $('next').disabled = month === 11;
+    [...$('months').children].forEach((b, i) => b.classList.toggle('on', i === month));
+    $('months').children[month].scrollIntoView({ block: 'nearest', inline: 'center' });
+
+    const g = $('grid'); g.innerHTML = '';
+    const wkHead = document.createElement('div'); wkHead.className = 'dow'; wkHead.textContent = 'Wk'; g.appendChild(wkHead);
+    DOW.forEach((d, i) => { const el = document.createElement('div'); el.className = 'dow' + (i >= 5 ? ' we' : ''); el.textContent = d; g.appendChild(el); });
+
+    const first = new Date(YEAR, month, 1);
+    const days = new Date(YEAR, month + 1, 0).getDate();
+    const lead = dowMon(first);
+    const cells = Math.ceil((lead + days) / 7) * 7;
+    for (let c = 0; c < cells; c++) {
+      const dnum = c - lead + 1;
+      if (c % 7 === 0) {
+        const ref = new Date(YEAR, month, Math.min(days, Math.max(1, dnum)));
+        const wk = document.createElement('div'); wk.className = 'wk'; wk.textContent = isoWeek(ref); g.appendChild(wk);
+      }
+      const b = document.createElement('button');
+      b.className = 'day';
+      if (dnum < 1 || dnum > days) { b.classList.add('out'); b.tabIndex = -1; g.appendChild(b); continue; }
+      const key = iso(month, dnum);
+      if (c % 7 >= 5) b.classList.add('we');
+      if (holMap[key]) b.classList.add('hol');
+      if (key === todayIso) b.classList.add('today');
+      if (key === selected) b.classList.add('sel');
+      b.innerHTML = `<span>${dnum}</span><span class="dots">${holMap[key] ? '<i class="h"></i>' : ''}${notes[key] ? '<i></i>' : ''}</span>`;
+      b.setAttribute('aria-label', longDate(key) + (holMap[key] ? ', ' + holMap[key].map(h => h.name).join(', ') : '') + (notes[key] ? ', has a note' : ''));
+      b.onclick = () => select(key);
+      g.appendChild(b);
+    }
+  }
+
+  // ---------- day panel ----------
+  function select(key) {
+    selected = key;
+    const m = +key.slice(5, 7) - 1;
+    if (m !== month) go(m); else renderMonth();
+    $('dTitle').textContent = longDate(key);
+    $('dSub').textContent = `Week ${isoWeek(parse(key))}`;
+    $('dHols').innerHTML = (holMap[key] || []).map(h =>
+      `<span class="holtag">🇲🇾 ${h.name}${h.est ? ' (expected)' : ''}${h.note ? ' · ' + h.note : ''}</span>`).join('');
+    $('noteBox').value = notes[key] || '';
+    $('noteBox').disabled = false;
+    $('saved').textContent = 'Notes save automatically on this phone.';
+  }
+
+  let saveTimer;
+  $('noteBox').addEventListener('input', () => {
+    if (!selected) return;
+    const v = $('noteBox').value;
+    if (v.trim()) notes[selected] = v; else delete notes[selected];
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      $('saved').textContent = saveNotes() ? 'Saved ✓' : "Couldn't save on this browser.";
+      renderMonth(); if (tab === 'notes') renderList();
+    }, 400);
+  });
+  $('clearNote').onclick = () => {
+    if (!selected || !notes[selected]) return;
+    if (!confirm('Clear the note for this day?')) return;
+    delete notes[selected]; saveNotes();
+    $('noteBox').value = ''; $('saved').textContent = 'Note cleared.';
+    renderMonth(); if (tab === 'notes') renderList();
+  };
+
+  // ---------- holidays / notes list ----------
+  function renderList() {
+    const ul = $('list'); ul.innerHTML = '';
+    let items;
+    if (tab === 'hol') {
+      items = HOLIDAYS.map(([d, name, est, note]) => ({ d, text: name, small: [est ? 'Expected date' : '', note].filter(Boolean).join(' · ') }));
+    } else {
+      items = Object.keys(notes).sort().map(d => ({ d, text: notes[d], small: '', clip: true }));
+      if (!items.length) { ul.innerHTML = '<li class="empty" style="cursor:default">No notes yet. Tap a date on the calendar to add one.</li>'; return; }
+    }
+    items.forEach(it => {
+      const dt = parse(it.d);
+      const li = document.createElement('li');
+      if (it.d < todayIso) li.classList.add('past');
+      li.innerHTML = `<div class="d"><b>${dt.getDate()}</b><small>${MONTHS[dt.getMonth()].slice(0, 3)} · ${DOW[dowMon(dt)]}</small></div>
+        <div class="t"><div class="${it.clip ? 'clip' : ''}"></div><small></small></div>`;
+      li.querySelector('.t > div').textContent = it.text;
+      li.querySelector('.t small').textContent = it.small;
+      li.onclick = () => { select(it.d); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+      ul.appendChild(li);
+    });
+  }
+  function setTab(t) {
+    tab = t;
+    $('tabHol').classList.toggle('on', t === 'hol');
+    $('tabNotes').classList.toggle('on', t === 'notes');
+    renderList();
+  }
+  $('tabHol').onclick = () => setTab('hol');
+  $('tabNotes').onclick = () => setTab('notes');
+
+  // ---------- navigation: buttons, swipe, arrow keys ----------
+  $('prev').onclick = () => go(month - 1);
+  $('next').onclick = () => go(month + 1);
+  let sx = null, sy = null;
+  $('cal').addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  $('cal').addEventListener('touchend', e => {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(month + (dx < 0 ? 1 : -1));
+    sx = null;
+  });
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft') go(month - 1);
+    if (e.key === 'ArrowRight') go(month + 1);
+  });
+
+  // ---------- start ----------
+  renderMonth();
+  if (selected) select(selected);
+  else { $('noteBox').disabled = true; }
+  renderList();
+
+  // works offline once installed (only when served over the web, not from a local file)
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
